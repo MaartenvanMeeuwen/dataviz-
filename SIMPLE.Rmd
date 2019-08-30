@@ -1,0 +1,74 @@
+---
+title: "A D3.js workflow in R Markdown"
+author: "Maarten van Meeuwen"
+output: distill::distill_article
+css: styles.css
+---
+
+```{r setup, warning = FALSE, message = FALSE}
+library(jsonlite)
+library(tidyverse)
+library(knitr)
+```
+
+R is powerful statistical package which already has a bunch of excellent visualization packages. However, none of these packages allow for very extensive customization. D3.js is a library that does allow for extensive customization and combines HTML, svg, and css. This document is about my learning curve regarding combining D3 and R Markdown and is heavily based on [this document](https://rpubs.com/jalapic/rd3js).
+
+Those who use R Markdown might want to dynamically incorporate D3-visuals in R Markdown and this article gives some pointers. R visualization libraries tend to be static, (e.g., `ggplot2`). When there is a need for interactivity, one might create HTML widgets that rely on R shiny. Or, incorporate D3. 
+
+At a fundamental level, a D3-object consists of three components:
+
+* some HTML code, which dictate where each component is;
+
+* some CSS (cascading style sheet), which are about the style of the visual;
+
+* and, some JavaScript, which do all the work. 
+
+A possible workflow that allows for debugging is to first create the visual in a .html file in a browser like Google Chrome for debugging purposes. Next one has to strip out all the HTML (which will directly be in the markdown here). Note that this is not a tutorial about D3. I will include both scripts that includes the HTML for browser-based editing as well as the script that directly referenced in this page. 
+
+First, let's create some random data. Below two random normals and a random string. The two random normals will be part of a scatterplot and when hovering data points the random string should be visible. 
+
+```{r,  echo = TRUE}
+myFun <- function(n = 100) {
+  a <- do.call(paste0, replicate(5, 
+                                 sample(LETTERS, n, TRUE), FALSE))
+  paste0(a, sprintf("%04d", sample(9999, n, TRUE)), 
+         sample(LETTERS, n, TRUE))
+}
+
+set.seed(1234)
+data = data_frame(name = myFun(), x = rnorm(100), y = rnorm(100))
+data %>% head() %>% kable()
+```
+
+
+While statisticians like to work with rectangular data, much of the data out there is hierarchical and in JavaScript Object Notation (JSON). D3.js could handle .csv files in this case, but in other cases it might not. Hence, we first convert the data to JSON and then print this such that D3 can read the data. 
+
+The chunk below converts the tabular data to JSON and passes it to global environment where it can be read by JavaScript. The chunk option needs to be `results = "asis"`.
+
+```{r, echo = TRUE, results="asis", message=FALSE, warning=FALSE}
+cat(
+  paste(
+  '<script>
+    var data = ',toJSON(data),';
+  </script>'
+  , sep="")
+)
+```
+
+Then you'd want to include the raw HTML and the scripts for the visualization [see here for more information](https://github.com/rstudio/rmarkdown/issues/326). Place where you want to show the D3-visual and reference this below:
+
+```{r, echo = FALSE}
+include_graphics("code.png")
+```
+
+
+
+<!--html_preserve-->
+		<div class="chart"></div>
+<!--/html_preserve-->
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="vizjs.js"></script>
+
+
+Please note that this document will be updated 
